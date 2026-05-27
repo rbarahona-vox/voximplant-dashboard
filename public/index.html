@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Sin cache para forzar recarga del nuevo archivo -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Voximplant Dashboard Realtime</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -18,7 +22,6 @@
         th { background: #f7fafc; color: #4a5568; font-weight: 600; }
         .badge { padding: 1px 5px; border-radius: 3px; font-size: 10px; font-weight: bold; display: inline-block; }
         .badge-success { background: #c6f6d5; color: #22543d; }
-        .badge-warning { background: #feebc8; color: #744210; }
         .badge-neutral { background: #e2e8f0; color: #4a5568; }
         .loading-text { text-align: center; color: #3182ce; font-weight: 500; font-size: 10px; }
         .agent-info { margin-bottom: 6px; }
@@ -32,11 +35,9 @@
 <div class="container">
 
     <div class="card">
-        <h2>Últimas llamadas con tipificación <span id="clientPhoneLabel" style="color:#3182ce; font-weight:400;"></span></h2>
+        <h2>Últimas llamadas tipificadas <span id="clientPhoneLabel" style="color:#3182ce; font-weight:400;"></span></h2>
         <table>
-            <thead>
-                <tr><th>Fecha / Hora</th><th>Duración</th><th>Wrap-up</th></tr>
-            </thead>
+            <thead><tr><th>Fecha / Hora</th><th>Duración</th><th>Wrap-up</th></tr></thead>
             <tbody id="callsTableBody">
                 <tr><td colspan="3" class="loading-text">Cargando historial...</td></tr>
             </tbody>
@@ -51,9 +52,7 @@
         </div>
         <div class="layout-row">
             <table>
-                <thead>
-                    <tr><th>Estado</th><th>Acumulado</th></tr>
-                </thead>
+                <thead><tr><th>Estado</th><th>Acumulado</th></tr></thead>
                 <tbody id="agentSummaryTableBody">
                     <tr><td colspan="2" style="text-align:center; color:#a0aec0;">Consultando...</td></tr>
                 </tbody>
@@ -65,68 +64,64 @@
     </div>
 
 </div>
-
 <script>
     const API_BASE = 'https://fermin-floral-yosef.ngrok-free.dev';
     let summaryChart;
 
     async function fetchCallHistoryAutomatically(phoneB) {
         const tbody = document.getElementById('callsTableBody');
-
         try {
             const response = await fetch(`${API_BASE}/api/history/calls?phone_b=${encodeURIComponent(phoneB)}`, {
                 headers: { 'ngrok-skip-browser-warning': '1' }
             });
             const data = await response.json();
-            console.log('📦 [FRONT] Historial:', data);
+            console.log('📦 [FRONT] Historial completo:', JSON.stringify(data));
             tbody.innerHTML = '';
 
-            // Extraer agent_id desde el campo top-level (siempre presente aunque no haya wrap_up)
-            const agentId = data.agent_id || (data.result && data.result[0]?.agente_id) || null;
-            console.log('🎯 [FRONT] agent_id:', agentId);
+            // Leer agent_id desde campo top-level que ahora siempre envía el backend
+            const agentId = data.agent_id || null;
+            console.log('🎯 [FRONT] agent_id desde data.agent_id:', agentId);
 
             if (!data.result || data.result.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#718096;">Sin llamadas tipificadas en los últimos 30 días.</td></tr>';
-                return agentId; // Devolver agentId aunque no haya historial
-            }
+            } else {
+                data.result.forEach(call => {
+                    const tr = document.createElement('tr');
+                    const date = call.fecha ? (() => {
+                        const d = new Date(call.fecha.replace(' ', 'T') + 'Z');
+                        return d.toLocaleString('es-MX', {
+                            timeZone: 'America/Mexico_City',
+                            year: 'numeric', month: '2-digit', day: '2-digit',
+                            hour: '2-digit', minute: '2-digit', hour12: false
+                        }).replace(',', '');
+                    })() : 'Sin fecha';
 
-            data.result.forEach(call => {
-                const tr = document.createElement('tr');
+                    const dur = call.duracion_seg || 0;
+                    const duration = `${Math.floor(dur / 60)}m ${dur % 60}s`;
 
-                const date = call.fecha ? (() => {
-                    const d = new Date(call.fecha.replace(' ', 'T') + 'Z');
-                    return d.toLocaleString('es-MX', {
-                        timeZone: 'America/Mexico_City',
-                        year: 'numeric', month: '2-digit', day: '2-digit',
-                        hour: '2-digit', minute: '2-digit', hour12: false
-                    }).replace(',', '');
-                })() : 'Sin fecha';
-
-                const dur = call.duracion_seg || 0;
-                const duration = `${Math.floor(dur / 60)}m ${dur % 60}s`;
-
-                let wrapUpName = null;
-                let badgeClass = 'badge-neutral';
-                if (call.wrap_up_code) {
-                    if (typeof call.wrap_up_code === 'string') wrapUpName = call.wrap_up_code;
-                    else if (typeof call.wrap_up_code === 'object') {
-                        wrapUpName = call.wrap_up_code.wrap_up_code_name || call.wrap_up_code.name || call.wrap_up_code.title;
+                    let wrapUpName = null;
+                    if (call.wrap_up_code) {
+                        if (typeof call.wrap_up_code === 'string') wrapUpName = call.wrap_up_code;
+                        else if (typeof call.wrap_up_code === 'object') {
+                            wrapUpName = call.wrap_up_code.wrap_up_code_name || call.wrap_up_code.name || call.wrap_up_code.title;
+                        }
                     }
-                    if (wrapUpName) badgeClass = 'badge-success';
-                }
 
-                tr.innerHTML = `
-                    <td>${date}</td>
-                    <td>${duration}</td>
-                    <td>${wrapUpName ? `<span class="badge ${badgeClass}">${wrapUpName}</span>` : '<span style="color:#a0aec0;">—</span>'}</td>
-                `;
-                tbody.appendChild(tr);
-            });
+                    tr.innerHTML = `
+                        <td>${date}</td>
+                        <td>${duration}</td>
+                        <td>${wrapUpName
+                            ? `<span class="badge badge-success">${wrapUpName}</span>`
+                            : '<span style="color:#a0aec0;">—</span>'
+                        }</td>`;
+                    tbody.appendChild(tr);
+                });
+            }
 
             return agentId;
 
         } catch (e) {
-            console.error(e);
+            console.error('[FRONT] Error historial:', e);
             tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:red;">Fallo de conexión.</td></tr>';
             return null;
         }
@@ -140,7 +135,7 @@
                 headers: { 'ngrok-skip-browser-warning': '1' }
             });
             const data = await response.json();
-            console.log('📦 [FRONT] Métricas:', data);
+            console.log('📦 [FRONT] Métricas:', JSON.stringify(data));
             tbody.innerHTML = '';
 
             if (!data.success) {
@@ -155,26 +150,21 @@
                 return;
             }
 
-            const labels = [];
-            const durations = [];
-
+            const labels = [], durations = [];
             data.result.states.forEach(state => {
                 labels.push(state.name);
                 durations.push(state.total_duration);
-
                 const h = String(Math.floor(state.total_duration / 3600)).padStart(2, '0');
                 const m = String(Math.floor((state.total_duration % 3600) / 60)).padStart(2, '0');
                 const s = String(state.total_duration % 60).padStart(2, '0');
-
                 const tr = document.createElement('tr');
                 tr.innerHTML = `<td><strong>${state.name.replace(/_/g, ' ')}</strong></td><td>${h}:${m}:${s}</td>`;
                 tbody.appendChild(tr);
             });
-
             updateChart(labels, durations);
 
         } catch (error) {
-            console.error(error);
+            console.error('[FRONT] Error métricas:', error);
             tbody.innerHTML = '<tr><td colspan="2" style="color:red; text-align:center;">Error en métricas.</td></tr>';
         }
     }
@@ -183,30 +173,12 @@
         const ctx = document.getElementById('stateSummaryChart').getContext('2d');
         summaryChart = new Chart(ctx, {
             type: 'doughnut',
-            data: {
-                labels: [],
-                datasets: [{
-                    data: [],
-                    backgroundColor: ['#4299e1','#48bb78','#ed8936','#9f7aea','#ecc94b','#fc8181','#76e4f7'],
-                    borderWidth: 1,
-                    borderColor: '#fff'
-                }]
-            },
+            data: { labels: [], datasets: [{ data: [], backgroundColor: ['#4299e1','#48bb78','#ed8936','#9f7aea','#ecc94b','#fc8181','#76e4f7'], borderWidth: 1, borderColor: '#fff' }] },
             options: {
                 responsive: false,
                 plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { font: { size: 9 }, boxWidth: 8, padding: 5 }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(ctx) {
-                                const s = ctx.raw;
-                                return ` ${ctx.label}: ${Math.floor(s/3600)}h ${Math.floor((s%3600)/60)}m ${s%60}s`;
-                            }
-                        }
-                    }
+                    legend: { position: 'bottom', labels: { font: { size: 9 }, boxWidth: 8, padding: 5 } },
+                    tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${Math.floor(ctx.raw/3600)}h ${Math.floor((ctx.raw%3600)/60)}m ${ctx.raw%60}s` } }
                 }
             }
         });
@@ -223,9 +195,9 @@
 
         let rawParam = window.location.search.substring(1);
         let finalPhone = decodeURIComponent(rawParam).trim();
-        const contieneLetrasOLlaves = /[a-zA-Z{} ]/.test(finalPhone);
+        const esInvalido = !finalPhone || finalPhone === 'null' || finalPhone === 'undefined' || finalPhone === '' || /[a-zA-Z{} ]/.test(finalPhone);
 
-        if (!finalPhone || finalPhone === 'null' || finalPhone === 'undefined' || finalPhone === '' || contieneLetrasOLlaves) {
+        if (esInvalido) {
             document.getElementById('clientPhoneLabel').innerText = '(Conectando...)';
             document.getElementById('callsTableBody').innerHTML = '<tr><td colspan="3" style="text-align:center; color:#718096;">Esperando teléfono...</td></tr>';
             document.getElementById('agentSummaryTableBody').innerHTML = '<tr><td colspan="2" style="text-align:center; color:#718096;">Esperando llamada...</td></tr>';
@@ -235,7 +207,7 @@
         document.getElementById('clientPhoneLabel').innerText = `(${finalPhone})`;
 
         const agentId = await fetchCallHistoryAutomatically(finalPhone);
-        console.log('🔍 [FRONT] agentId final:', agentId);
+        console.log('🔍 [FRONT] agentId final recibido:', agentId);
 
         if (agentId) {
             fetchAgentSummary(agentId);
