@@ -133,7 +133,7 @@ app.get('/api/agent/summary', async (req, res) => {
         metricsPayload.append('timezone', 'America/Mexico_City');
 
         // 🛠️ CORRECCIÓN: path correcto es /api/v3/metrics/
-        const metricsUrl = `${KIT_API_HOST}/api/v3/metrics/getAgentsMetricsCalls?domain=${DOMAIN_NAME}`;
+        const metricsUrl = `${KIT_API_HOST}/api/v3/realtimeMetrics/getAgentsMetricsCalls?domain=${DOMAIN_NAME}`;
         console.log(`📡 [DEBUG MÉTRICAS] Solicitando acumulados del día para agente [${agentIdNum}] en: ${metricsUrl}`);
 
         const metricsResponse = await axios.post(metricsUrl, metricsPayload, { 
