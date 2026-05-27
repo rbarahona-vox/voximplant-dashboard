@@ -3,218 +3,248 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Sin cache para forzar recarga del nuevo archivo -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <title>Voximplant Dashboard Realtime</title>
+    <title>Voximplant Dashboard Realtime - v4</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        html { font-size: 11px; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f7fafc; padding: 6px; color: #2d3748; }
-        .container { max-width: 900px; margin: 0 auto; }
-        .card { background: white; padding: 10px 12px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 8px; }
-        h2 { font-size: 12px; padding-bottom: 5px; border-bottom: 2px solid #edf2f7; color: #1a202c; margin-bottom: 4px; }
-        .agent-badge { background: #cbd5e0; color: #2d3748; padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 600; display: inline-block; margin-top: 2px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 4px; }
-        th, td { padding: 4px 7px; text-align: left; border-bottom: 1px solid #edf2f7; font-size: 10px; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f7fafc; padding: 8px; color: #2d3748; font-size: 12px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .card { background: white; padding: 12px 14px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); margin-bottom: 10px; }
+        h2 { font-size: 13px; padding-bottom: 6px; border-bottom: 2px solid #edf2f7; color: #1a202c; margin-bottom: 4px; }
+        .agent-badge { background: #cbd5e0; color: #2d3748; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; display: inline-block; margin-top: 3px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+        th, td { padding: 5px 8px; text-align: left; border-bottom: 1px solid #edf2f7; font-size: 11px; }
         th { background: #f7fafc; color: #4a5568; font-weight: 600; }
-        .badge { padding: 1px 5px; border-radius: 3px; font-size: 10px; font-weight: bold; display: inline-block; }
+        .badge { padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: bold; display: inline-block; }
         .badge-success { background: #c6f6d5; color: #22543d; }
-        .badge-neutral { background: #e2e8f0; color: #4a5568; }
-        .loading-text { text-align: center; color: #3182ce; font-weight: 500; font-size: 10px; }
-        .agent-info { margin-bottom: 6px; }
-        .agent-info span.label { font-size: 10px; color: #718096; }
-        .layout-row { display: flex; gap: 8px; align-items: flex-start; }
-        .layout-row table { flex: 1; }
-        .chart-wrap { flex-shrink: 0; }
+        .badge-warning { background: #feebc8; color: #744210; }
+        .loading-text { text-align: center; color: #3182ce; font-weight: 500; font-size: 11px; }
+        .agent-info { margin-bottom: 8px; }
+        .agent-info span.label { font-size: 11px; color: #718096; }
+        .chart-container { margin-top: 10px; display: flex; justify-content: center; }
     </style>
 </head>
 <body>
-<div class="container">
 
-    <div class="card">
-        <h2>Últimas llamadas tipificadas <span id="clientPhoneLabel" style="color:#3182ce; font-weight:400;"></span></h2>
-        <table>
-            <thead><tr><th>Fecha / Hora</th><th>Duración</th><th>Wrap-up</th></tr></thead>
-            <tbody id="callsTableBody">
-                <tr><td colspan="3" class="loading-text">Cargando historial...</td></tr>
-            </tbody>
-        </table>
-    </div>
+    <div class="container">
 
-    <div class="card">
-        <h2>Estados del agente (hoy)</h2>
-        <div class="agent-info">
-            <span class="label">Agente: </span>
-            <span class="agent-badge" id="agentEmailLabel">Detectando...</span>
-        </div>
-        <div class="layout-row">
+        <div class="card">
+            <h2>Últimas 10 Llamadas <span id="clientPhoneLabel" style="color: #3182ce;"></span></h2>
             <table>
-                <thead><tr><th>Estado</th><th>Acumulado</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th>Fecha / Hora</th>
+                        <th>Duración</th>
+                        <th>Wrap-up</th>
+                    </tr>
+                </thead>
+                <tbody id="callsTableBody">
+                    <tr><td colspan="3" class="loading-text">Cargando historial...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>Estados del Agente (hoy)</h2>
+            <div class="agent-info">
+                <span class="label">Agente:</span>
+                <span class="agent-badge" id="agentEmailLabel">Detectando...</span>
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Estado</th>
+                        <th>Acumulado</th>
+                    </tr>
+                </thead>
                 <tbody id="agentSummaryTableBody">
                     <tr><td colspan="2" style="text-align:center; color:#a0aec0;">Consultando...</td></tr>
                 </tbody>
             </table>
-            <div class="chart-wrap">
-                <canvas id="stateSummaryChart" width="160" height="160"></canvas>
+
+            <div class="chart-container">
+                <canvas id="stateSummaryChart" width="180" height="180"></canvas>
             </div>
         </div>
+
     </div>
 
-</div>
-<script>
-    const API_BASE = 'https://fermin-floral-yosef.ngrok-free.dev';
-    let summaryChart;
+    <script>
+        const API_BASE = 'https://fermin-floral-yosef.ngrok-free.dev';
+        let summaryChart;
 
-    async function fetchCallHistoryAutomatically(phoneB) {
-        const tbody = document.getElementById('callsTableBody');
-        try {
-            const response = await fetch(`${API_BASE}/api/history/calls?phone_b=${encodeURIComponent(phoneB)}`, {
-                headers: { 'ngrok-skip-browser-warning': '1' }
-            });
-            const data = await response.json();
-            console.log('📦 [FRONT] Historial completo:', JSON.stringify(data));
-            tbody.innerHTML = '';
+        // Paso 1: Obtener historial Y extraer el agent_id de la llamada más reciente
+        async function fetchCallHistoryAutomatically(phoneB) { 
+            const tbody = document.getElementById('callsTableBody'); 
+            let agentId = null;
 
-            // Leer agent_id desde campo top-level que ahora siempre envía el backend
-            const agentId = data.agent_id || null;
-            console.log('🎯 [FRONT] agent_id desde data.agent_id:', agentId);
+            try { 
+                const response = await fetch(`${API_BASE}/api/history/calls?phone_b=${encodeURIComponent(phoneB)}`, {
+                    method: 'GET',
+                    headers: { 'ngrok-skip-browser-warning': '1' }
+                }); 
+                const data = await response.json(); 
+                console.log('📦 [DEBUG FRONT] Respuesta completa del historial:', JSON.stringify(data, null, 2));
+                tbody.innerHTML = ''; 
+                
+                if (!data.result || data.result.length === 0) { 
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No se encontraron llamadas tipificadas.</td></tr>'; 
+                    return null; 
+                } 
 
-            if (!data.result || data.result.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#718096;">Sin llamadas tipificadas en los últimos 30 días.</td></tr>';
-            } else {
-                data.result.forEach(call => {
-                    const tr = document.createElement('tr');
+                // Extraer agent_id de la llamada más reciente
+                agentId = data.result[0].agente_id || null;
+                console.log('🎯 [DEBUG FRONT] agent_id extraído:', agentId);
+                
+                data.result.forEach(call => { 
+                    const tr = document.createElement('tr'); 
                     const date = call.fecha ? (() => {
-                        const d = new Date(call.fecha.replace(' ', 'T') + 'Z');
-                        return d.toLocaleString('es-MX', {
-                            timeZone: 'America/Mexico_City',
-                            year: 'numeric', month: '2-digit', day: '2-digit',
-                            hour: '2-digit', minute: '2-digit', hour12: false
+                        const utcDate = new Date(call.fecha.replace(' ', 'T') + 'Z');
+                        return utcDate.toLocaleString('es-MX', {
+                            timeZone: 'America/Mexico_City', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false
                         }).replace(',', '');
-                    })() : 'Sin fecha';
+                    })() : 'Sin Fecha';
+                    
+                    const durationRaw = call.duracion_seg || 0; 
+                    const duration = `${Math.floor(durationRaw / 60)}m ${durationRaw % 60}s`; 
+                    
+                    let wrapUpName = null; 
+                    let badgeClass = 'badge-warning'; 
 
-                    const dur = call.duracion_seg || 0;
-                    const duration = `${Math.floor(dur / 60)}m ${dur % 60}s`;
-
-                    let wrapUpName = null;
-                    if (call.wrap_up_code) {
+                    if (call.wrap_up_code) { 
                         if (typeof call.wrap_up_code === 'string') wrapUpName = call.wrap_up_code;
                         else if (typeof call.wrap_up_code === 'object') {
                             wrapUpName = call.wrap_up_code.wrap_up_code_name || call.wrap_up_code.name || call.wrap_up_code.title;
                         }
+                        if (wrapUpName) badgeClass = 'badge-success';
                     }
 
-                    tr.innerHTML = `
-                        <td>${date}</td>
-                        <td>${duration}</td>
-                        <td>${wrapUpName
-                            ? `<span class="badge badge-success">${wrapUpName}</span>`
-                            : '<span style="color:#a0aec0;">—</span>'
-                        }</td>`;
-                    tbody.appendChild(tr);
-                });
-            }
+                    if (!wrapUpName) return; 
+                    
+                    tr.innerHTML = `<td>${date}</td><td>${duration}</td><td><span class="badge ${badgeClass}">${wrapUpName}</span></td>`; 
+                    tbody.appendChild(tr); 
+                }); 
+            } catch (e) { 
+                console.error(e); 
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:red;">Fallo de conexión.</td></tr>'; 
+            } 
 
             return agentId;
-
-        } catch (e) {
-            console.error('[FRONT] Error historial:', e);
-            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:red;">Fallo de conexión.</td></tr>';
-            return null;
         }
-    }
 
-    async function fetchAgentSummary(agentId) {
-        const tbody = document.getElementById('agentSummaryTableBody');
-        console.log('📡 [FRONT] Consultando métricas para agent_id:', agentId);
-        try {
-            const response = await fetch(`${API_BASE}/api/agent/summary?agent_id=${encodeURIComponent(agentId)}`, {
-                headers: { 'ngrok-skip-browser-warning': '1' }
-            });
-            const data = await response.json();
-            console.log('📦 [FRONT] Métricas:', JSON.stringify(data));
-            tbody.innerHTML = '';
+        // Paso 2: Consultar métricas usando el agent_id que vino del historial
+        async function fetchAgentSummary(agentId) {
+            const tbody = document.getElementById('agentSummaryTableBody');
+            console.log('📡 [DEBUG FRONT] Enviando agent_id al backend:', agentId);
+            try {
+                const response = await fetch(`${API_BASE}/api/agent/summary?agent_id=${encodeURIComponent(agentId)}`, {
+                    method: 'GET',
+                    headers: { 'ngrok-skip-browser-warning': '1' }
+                });
+                const data = await response.json();
+                console.log('📦 [DEBUG FRONT] Respuesta de métricas:', JSON.stringify(data, null, 2));
+                tbody.innerHTML = '';
 
-            if (!data.success) {
-                tbody.innerHTML = `<tr><td colspan="2" style="text-align:center; color:#dd6b20;">${data.error || 'Sin datos.'}</td></tr>`;
-                return;
-            }
-
-            document.getElementById('agentEmailLabel').innerText = data.result.agent_name || `ID: ${data.result.agent_id}`;
-
-            if (!data.result.states || data.result.states.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#a0aec0;">Sin actividad registrada hoy.</td></tr>';
-                return;
-            }
-
-            const labels = [], durations = [];
-            data.result.states.forEach(state => {
-                labels.push(state.name);
-                durations.push(state.total_duration);
-                const h = String(Math.floor(state.total_duration / 3600)).padStart(2, '0');
-                const m = String(Math.floor((state.total_duration % 3600) / 60)).padStart(2, '0');
-                const s = String(state.total_duration % 60).padStart(2, '0');
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td><strong>${state.name.replace(/_/g, ' ')}</strong></td><td>${h}:${m}:${s}</td>`;
-                tbody.appendChild(tr);
-            });
-            updateChart(labels, durations);
-
-        } catch (error) {
-            console.error('[FRONT] Error métricas:', error);
-            tbody.innerHTML = '<tr><td colspan="2" style="color:red; text-align:center;">Error en métricas.</td></tr>';
-        }
-    }
-
-    function initChart() {
-        const ctx = document.getElementById('stateSummaryChart').getContext('2d');
-        summaryChart = new Chart(ctx, {
-            type: 'doughnut',
-            data: { labels: [], datasets: [{ data: [], backgroundColor: ['#4299e1','#48bb78','#ed8936','#9f7aea','#ecc94b','#fc8181','#76e4f7'], borderWidth: 1, borderColor: '#fff' }] },
-            options: {
-                responsive: false,
-                plugins: {
-                    legend: { position: 'bottom', labels: { font: { size: 9 }, boxWidth: 8, padding: 5 } },
-                    tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${Math.floor(ctx.raw/3600)}h ${Math.floor((ctx.raw%3600)/60)}m ${ctx.raw%60}s` } }
+                if (!data.success) {
+                    tbody.innerHTML = `<tr><td colspan="2" style="text-align:center; color: #dd6b20;">${data.error || 'Sin datos.'}</td></tr>`;
+                    return;
                 }
+
+                document.getElementById('agentEmailLabel').innerText = data.result.agent_name || `ID: ${data.result.agent_id}`;
+
+                const labels = [];
+                const durations = [];
+
+                data.result.states.forEach(state => {
+                    labels.push(state.name);
+                    durations.push(state.total_duration);
+
+                    const hrs = String(Math.floor(state.total_duration / 3600)).padStart(2, '0');
+                    const mins = String(Math.floor((state.total_duration % 3600) / 60)).padStart(2, '0');
+                    const secs = String(state.total_duration % 60).padStart(2, '0');
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td><strong>${state.name.replace(/_/g, ' ')}</strong></td><td>${hrs}:${mins}:${secs}</td>`;
+                    tbody.appendChild(tr);
+                });
+
+                updateChart(labels, durations);
+            } catch (error) {
+                console.error(error);
+                tbody.innerHTML = '<tr><td colspan="2" style="color:red; text-align:center;">Error en métricas.</td></tr>';
             }
-        });
-    }
-
-    function updateChart(labels, dataSecs) {
-        summaryChart.data.labels = labels;
-        summaryChart.data.datasets[0].data = dataSecs;
-        summaryChart.update();
-    }
-
-    window.onload = async () => {
-        initChart();
-
-        let rawParam = window.location.search.substring(1);
-        let finalPhone = decodeURIComponent(rawParam).trim();
-        const esInvalido = !finalPhone || finalPhone === 'null' || finalPhone === 'undefined' || finalPhone === '' || /[a-zA-Z{} ]/.test(finalPhone);
-
-        if (esInvalido) {
-            document.getElementById('clientPhoneLabel').innerText = '(Conectando...)';
-            document.getElementById('callsTableBody').innerHTML = '<tr><td colspan="3" style="text-align:center; color:#718096;">Esperando teléfono...</td></tr>';
-            document.getElementById('agentSummaryTableBody').innerHTML = '<tr><td colspan="2" style="text-align:center; color:#718096;">Esperando llamada...</td></tr>';
-            return;
         }
 
-        document.getElementById('clientPhoneLabel').innerText = `(${finalPhone})`;
-
-        const agentId = await fetchCallHistoryAutomatically(finalPhone);
-        console.log('🔍 [FRONT] agentId final recibido:', agentId);
-
-        if (agentId) {
-            fetchAgentSummary(agentId);
-        } else {
-            document.getElementById('agentSummaryTableBody').innerHTML = '<tr><td colspan="2" style="text-align:center; color:#dd6b20;">No se identificó agente en el historial.</td></tr>';
+        function initChart() {
+            const ctx = document.getElementById('stateSummaryChart').getContext('2d');
+            summaryChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: { 
+                    labels: [], 
+                    datasets: [{ 
+                        data: [], 
+                        backgroundColor: ['#4299e1', '#48bb78', '#ed8936', '#9f7aea', '#ecc94b', '#fc8181', '#76e4f7'],
+                        borderWidth: 1,
+                        borderColor: '#fff'
+                    }] 
+                },
+                options: { 
+                    responsive: false,
+                    plugins: { 
+                        legend: { 
+                            position: 'right',
+                            labels: { font: { size: 10 }, boxWidth: 10, padding: 6 }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const secs = context.raw;
+                                    const h = Math.floor(secs / 3600);
+                                    const m = Math.floor((secs % 3600) / 60);
+                                    const s = secs % 60;
+                                    return ` ${context.label}: ${h}h ${m}m ${s}s`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
-    };
-</script>
+
+        function updateChart(labels, dataSecs) {
+            summaryChart.data.labels = labels;
+            summaryChart.data.datasets[0].data = dataSecs;
+            summaryChart.update();
+        }
+
+        window.onload = async () => {
+            initChart();
+
+            let rawParam = window.location.search.substring(1); 
+            let finalPhone = decodeURIComponent(rawParam).trim();
+
+            const contieneLetrasOLlaves = /[a-zA-Z{} ]/.test(finalPhone);
+
+            if (!finalPhone || finalPhone === 'null' || finalPhone === 'undefined' || finalPhone === '' || contieneLetrasOLlaves) {
+                document.getElementById('clientPhoneLabel').innerText = "(Conectando...)";
+                document.getElementById('callsTableBody').innerHTML = '<tr><td colspan="3" style="text-align:center; color:#718096;">Esperando teléfono...</td></tr>';
+                document.getElementById('agentSummaryTableBody').innerHTML = '<tr><td colspan="2" style="text-align:center; color:#718096;">Esperando llamada...</td></tr>';
+                return;
+            }
+
+            document.getElementById('clientPhoneLabel').innerText = `(${finalPhone})`;
+
+            // Flujo secuencial: historial primero → extraer agent_id → luego métricas
+            const agentId = await fetchCallHistoryAutomatically(finalPhone);
+            console.log('🔍 [DEBUG FRONT] agentId retornado por fetchCallHistory:', agentId);
+            
+            if (agentId) {
+                fetchAgentSummary(agentId);
+            } else {
+                document.getElementById('agentSummaryTableBody').innerHTML = '<tr><td colspan="2" style="text-align:center; color:#dd6b20;">No se identificó agente en el historial.</td></tr>';
+            }
+        };
+    </script>
 </body>
 </html>
